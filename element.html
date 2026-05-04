@@ -3,12 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Cyber Climber</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <canvas id="gameCanvas"></canvas>
 
+    <!-- MAIN MENU -->
+    <div id="mainMenu">
+        <div class="menuContent">
+            <h1>CYBER CLIMBER</h1>
+            <button id="startBtn">Start Game</button>
+        </div>
+    </div>
+
+    <!-- HEALTH BARS -->
+    <div id="health-bars">
+        <div id="playerBar">
+            <img id="playerIcon" src="images/cyborgICON.png">
+            <p id="playerName">Player</p>
+            <div id="healthBar">
+                <div id="healthFill"></div>
+            </div>
+        </div>
+
+        <div id="targetBar">
+            <img id="targetIcon" src="images/targetICON.png">
+            <div id="targetHealthBar">
+                <div id="targetHealthFill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MENU BUTTON -->
+    <button id="menuBtn">≡</button>
+
+    <!-- PAUSE MENU -->
+    <div id="menuPanel">
+        <h2>Paused</h2>
+        <p>Press ESC to resume</p>
+        <div class="settingsSection">
+            <button class="setting">Switch Background</button>
+            <button class="setting">???</button>
+            <button class="setting">???</button>
+        </div>
+    </div>
+
+    <script src="cyborg.js"></script>
+    <script src="biker.js"></script>
     <script src="code.js"></script>
 </body>
 </html>
