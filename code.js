@@ -13,6 +13,16 @@ const scale = 2.5;
 const spriteWidth = 48;
 const spriteHeight = 48;
 
+// BAKGRUND
+const bgLayers = []
+for (let i = 1; i <= 4; i++) {
+    const img = new Image()
+    img.src = `backgrounds/city 2/${i}.png`
+    bgLayers.push(img)
+}
+const bgSpeeds = [0.025, 0.05, 0.075, 0.1]
+let bgOffset = 0
+
 // HITTAR MARKEN
 const getGroundY = () => canvas.height - (spriteHeight * scale);
 
@@ -40,7 +50,9 @@ const menuPanel = document.getElementById("menuPanel");
 const menuBtn = document.getElementById("menuBtn");
 
 const jumpSound = new Audio("sounds/jump.mp3");
+const doublejumpSound = new Audio("sounds/doublejump.mp3");
 const punchSound = new Audio("sounds/punch.mp3");
+const laserSound = new Audio("sounds/laser.mp3");
 const gameLoopMusic = new Audio("sounds/gameloop.mp3");
 gameLoopMusic.loop = true;
 
@@ -107,9 +119,32 @@ function takeDamage(char, amount) {
 
     if (char.health < 0) char.health = 0;
 
-    setTimeout(() => {
-        char.isHurt = false;
-    }, 500);
+    if (char.health === 0) {
+        char.isHurt = false
+        gameOver(char)
+    } else {
+        setTimeout(() => {
+            char.isHurt = false;
+        }, 500);
+    }
+}
+// SKA FIXA
+function gameOver() {
+    
+}
+
+// BAKGRUND
+function drawBackground() {
+    for (let i = 0; i < bgLayers.length; i++) {
+        const img = bgLayers[i]
+        const speed = bgSpeeds[i]
+
+        const offset = (cameraX * speed) % canvas.width
+        const fixedOffset = ((offset % canvas.width) + canvas.width) % canvas.width
+
+        ctx.drawImage(img, -fixedOffset, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, -fixedOffset + canvas.width, 0, canvas.width, canvas.height)
+    }
 }
 
 function drawPlayer(char) {
@@ -118,7 +153,7 @@ function drawPlayer(char) {
     const screenX = char.playerX - cameraX;
     const screenY = char.playerY;
 
-    const anchorOffset = 18 * scale; 
+    const anchorOffset = 14 * scale; 
 
     if (!char.facingRight) {
         ctx.translate(screenX + anchorOffset, screenY);
@@ -143,6 +178,7 @@ function drawPlayer(char) {
     ctx.restore();
 }
 
+// Uppdaterar spelarnas HP
 function updateInfoBars() {
 
     // P1 Bar
@@ -157,7 +193,7 @@ function updateInfoBars() {
             p1Bar.style.background = "linear-gradient(to left, #ffffff, #ff0000)"
         } else {
             p1Fill.style.width = "linear-gradient(to right, #00ff0d, #aaff60)"
-            p1Bar.style.background = "linear-gradient(to left, #ffffff, #929292)"
+            p1Bar.style.background = "linear-gradient(to left, #ffffff, #bdbdbd)"
         }
     }
 
@@ -172,7 +208,7 @@ function updateInfoBars() {
             p2Bar.style.background = "linear-gradient(to right, #ffffff, #ff0000)"
         } else {
             p2Fill.style.width = "linear-gradient(to left, #00ff0d, #aaff60)"
-            p2Bar.style.background = "linear-gradient(to right, #ffffff, #929292)"
+            p2Bar.style.background = "linear-gradient(to right, #ffffff, #bdbdbd)"
         }
     }
 }
@@ -199,6 +235,7 @@ function draw(timestamp) {
     updateAnimation(p1);
     updateAnimation(p2);
     updateInfoBars();
+    drawBackground();
 
     // Rita spelare
     drawPlayer(p1);
@@ -224,18 +261,18 @@ function draw(timestamp) {
 
 window.addEventListener("keydown", (e) => {
     // P1
-    if (e.code === "KeyW" && p1.jumpCount < maxJumps) { p1.velocityY = -12; p1.jumpCount++; jumpSound.cloneNode().play(); }
+    if (e.code === "KeyW" && p1.jumpCount < maxJumps) { p1.velocityY = -12; p1.jumpCount++; if (p1.jumpCount > 1) {doublejumpSound.cloneNode().play()} else {jumpSound.cloneNode().play()};}
     if (e.code === "KeyA") keys.a = true;
     if (e.code === "KeyD") keys.d = true;
     if (e.code === "KeyF" && !p1.isAttacking) { p1.isAttacking = true; punchSound.cloneNode().play(); }
     if (e.code === "KeyH") {takeDamage(p1, 10)};
 
     // P2
-    if (e.code === "ArrowUp" && p2.jumpCount < maxJumps) { p2.velocityY = -12; p2.jumpCount++; jumpSound.cloneNode().play(); }
+    if (e.code === "ArrowUp" && p2.jumpCount < maxJumps) { p2.velocityY = -12; p2.jumpCount++; if (p2.jumpCount > 1) {doublejumpSound.cloneNode().play()} else {jumpSound.cloneNode().play()};}
     if (e.code === "ArrowLeft") keys.left = true;
     if (e.code === "ArrowRight") keys.right = true;
-    if (e.code === "Slash" && !p2.isAttacking) { p2.isAttacking = true; punchSound.cloneNode().play(); }
-    if (e.code === "KeyH") {takeDamage(p2, 10)};
+    if (e.code === "Slash" && !p2.isAttacking) { p2.isAttacking = true; laserSound.cloneNode().play(); }
+    if (e.code === "KeyJ") {takeDamage(p2, 10)};
 
     if (e.code === "Escape") {
         gamePaused = !gamePaused;
