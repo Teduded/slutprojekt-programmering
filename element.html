@@ -20,18 +20,19 @@
 
     <!-- HEALTH BARS -->
     <div id="health-bars">
-        <div id="playerBar">
-            <img id="playerIcon" src="images/cyborgICON.png">
-            <p id="playerName">Player</p>
-            <div id="healthBar">
-                <div id="healthFill"></div>
+        <div id="p1Bar" class="player-ui-box">
+            <img class="character-icon" src="images/cyborgICON.png">
+            <p class="player-label">P1: Cyborg</p>
+            <div class="health-frame">
+                <div id="p1healthFill"></div>
             </div>
         </div>
 
-        <div id="targetBar">
-            <img id="targetIcon" src="images/targetICON.png">
-            <div id="targetHealthBar">
-                <div id="targetHealthFill"></div>
+        <div id="p2Bar" class="player-ui-box p2-flipped">
+            <img class="character-icon" src="images/targetICON.png">
+            <p class="player-label">P2: Biker</p>
+            <div class="health-frame">
+                <div id="p2healthFill"></div>
             </div>
         </div>
     </div>
