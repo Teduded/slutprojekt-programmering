@@ -5,11 +5,11 @@ class Cyborg {
         this.name = "Cyborg";
         this.defineSprites();
 
-        // --- FLYTTADE VARIABLER FRÅN MAIN ---
+        // FLYTTADE VARIABLER FRÅN MAIN
         this.health = 100;
         this.maxHealth = 100;
         
-        // Position & Rörelse
+        // Position
         this.playerX = startX;
         this.playerY = canvasHeight - (spriteHeight * scale);
         this.velocityY = 0;

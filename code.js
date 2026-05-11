@@ -206,11 +206,11 @@ function draw(timestamp) {
 
     // Hantera animation (15 FPS)
     if (timestamp - lastTimestamp > (1000 / 15)) {
-        // P1 Anim
+        // P1
         p1.frameIndex = (p1.frameIndex + 1) % p1.totalFrames;
         if (p1.isAttacking && p1.frameIndex >= p1.totalFrames - 1) p1.isAttacking = false;
 
-        // P2 Anim
+        // P2
         p2.frameIndex = (p2.frameIndex + 1) % p2.totalFrames;
         if (p2.isAttacking && p2.frameIndex >= p2.totalFrames - 1) p2.isAttacking = false;
 
@@ -223,14 +223,14 @@ function draw(timestamp) {
 // INPUT
 
 window.addEventListener("keydown", (e) => {
-    // Player 1
+    // P1
     if (e.code === "KeyW" && p1.jumpCount < maxJumps) { p1.velocityY = -12; p1.jumpCount++; jumpSound.cloneNode().play(); }
     if (e.code === "KeyA") keys.a = true;
     if (e.code === "KeyD") keys.d = true;
     if (e.code === "KeyF" && !p1.isAttacking) { p1.isAttacking = true; punchSound.cloneNode().play(); }
     if (e.code === "KeyH") {takeDamage(p1, 10)};
 
-    // Player 2
+    // P2
     if (e.code === "ArrowUp" && p2.jumpCount < maxJumps) { p2.velocityY = -12; p2.jumpCount++; jumpSound.cloneNode().play(); }
     if (e.code === "ArrowLeft") keys.left = true;
     if (e.code === "ArrowRight") keys.right = true;
