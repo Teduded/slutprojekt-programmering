@@ -22,7 +22,7 @@ class Cyborg {
         this.totalFrames = 4;
         this.isAttacking = false;
         this.isHurt = false;
-        this.isDead = false
+        this.isDead = false;
         
         this.currentSprite = this.idleSprite;
         this.lastSprite = this.idleSprite;

@@ -12,12 +12,13 @@ const maxJumps = 2;
 const scale = 2.5;
 const spriteWidth = 48;
 const spriteHeight = 48;
+let gameover = false
 
 // BAKGRUND
 const bgLayers = []
 for (let i = 1; i <= 4; i++) {
     const img = new Image()
-    img.src = `backgrounds/city 2/${i}.png`
+    img.src = `backgrounds/city 5/${i}.png`
     bgLayers.push(img)
 }
 const bgSpeeds = [0.025, 0.05, 0.075, 0.1]
@@ -53,8 +54,11 @@ const jumpSound = new Audio("sounds/jump.mp3");
 const doublejumpSound = new Audio("sounds/doublejump.mp3");
 const punchSound = new Audio("sounds/punch.mp3");
 const laserSound = new Audio("sounds/laser.mp3");
-const gameLoopMusic = new Audio("sounds/gameloop.mp3");
-gameLoopMusic.loop = true;
+const deathSound = new Audio("sounds/death.mp3");
+const gameOverMusic = new Audio("sounds/gameOverMusic.mp3");
+// Ska fixa en gameloop fil senare
+const gameLoop = new Audio("sounds/gameloop.mp3");
+gameLoop.loop = true;
 
 // FUNKTIONER
 
@@ -86,7 +90,10 @@ function updatePhysics(char, kLeft, kRight) {
 function updateAnimation(char) {
     const isOnGround = char.playerY >= getGroundY();
 
-    if (char.isHurt) {
+    if (char.isDead) {
+        char.currentSprite = char.deathSprite;
+        char.totalFrames = 6;
+    } else if (char.isHurt) {
         char.currentSprite = char.hurtSprite;
         char.totalFrames = 2;
     } else if (char.isAttacking) {
@@ -100,7 +107,7 @@ function updateAnimation(char) {
             char.currentSprite = char.jumpSprite;
         } else if (char.velocityX !== 0) {
             char.currentSprite = char.runSprite;
-            char.totalFrames = 6; // Run har ofta fler frames
+            char.totalFrames = 6;
         } else {
             char.currentSprite = char.idleSprite;
         }
@@ -113,24 +120,106 @@ function updateAnimation(char) {
     }
 }
 
+// Spelare tar damage
 function takeDamage(char, amount) {
+    if (char.isDead) return;
+
     char.health -= amount;
     char.isHurt = true;
+    char.isAttacking = false;
 
-    if (char.health < 0) char.health = 0;
-
-    if (char.health === 0) {
-        char.isHurt = false
-        gameOver(char)
+    if (char.health <= 0) {
+        char.health = 0;
+        char.isHurt = false;
+        char.isDead = true;
+        char.frameIndex = 0;
+        deathSound.cloneNode().play()
+        setTimeout(() => {gameOverMusic.cloneNode().play()}, 500)
     } else {
         setTimeout(() => {
             char.isHurt = false;
         }, 500);
     }
 }
-// SKA FIXA
+
+// När rundan är över
 function gameOver() {
-    
+    gameover = true
+    if (!gamePaused) {
+        setTimeout(() => {
+            gamePaused = true;
+            menuPanel.classList.add("active"); 
+            document.querySelector("#menuPanel h2").innerText = "Game Over!";
+            document.querySelector("#menuPanel p").innerText = "";
+        }, 200);
+    }
+}
+
+// HITBOXES FÖR ATTACK
+function checkCollision(rect1, rect2) {
+    return rect1.x < rect2.x + rect2.width &&
+           rect1.x + rect1.width > rect2.x &&
+           rect1.y < rect2.y + rect2.height &&
+           rect1.y + rect1.height > rect2.y;
+}
+
+function checkAttackHit(attacker, defender) {
+    // Om anfallaren inte (slår/redan har träffat/är på frame 2) så gör den inget
+    if (!attacker.isAttacking || attacker.hasHitThisAttack) return;
+    if (attacker.frameIndex !== 2) return;
+
+    // Definitierar träffyta
+    const defenderBox = {
+        x: defender.playerX,
+        y: defender.playerY,
+        width: spriteWidth * scale,
+        height: spriteHeight * scale
+    };
+
+    // Slagets range
+    const attackRange = 30 * scale; 
+    const attackHeight = 20 * scale;
+
+    // Räknar ut slagets position baserat på anfallarens position och riktning
+    let attackX;
+    if (attacker.facingRight) {
+        // Startar inuti spelaren och sträcker sig ut till höger
+        attackX = attacker.playerX + (spriteWidth * scale) / 2;
+    } else {
+        // Startar inuti spelaren och sträcker sig ut till vänster
+        attackX = attacker.playerX + (spriteWidth * scale) / 2 - attackRange;
+    }
+
+    const attackBox = {
+        x: attackX,
+        y: attacker.playerY + (spriteHeight * scale) / 3, // Slag i brösthöjd
+        width: attackRange,
+        height: attackHeight
+    };
+
+    // Kolla om de krockar
+    if (checkCollision(attackBox, defenderBox)) {
+        takeDamage(defender, 10);
+        attacker.hasHitThisAttack = true; // Hindrar att man tar skada varje frame under samma slag
+    }
+}
+
+function performAttack(char, soundEffect) {
+    // Om spelaren redan anfaller, är skadad eller har en aktiv cooldown -> tillåter inte attack
+    if (char.isAttacking || char.isHurt || char.isDead || char.attackCooldown) return;
+
+    // Starta attacken
+    char.isAttacking = true;
+    char.hasHitThisAttack = false;
+    soundEffect.cloneNode().play();
+
+    // Sätt cooldown till true
+    char.attackCooldown = true;
+
+    // Tar bort cooldownen efter 1 sek så man kan slå igen
+    setTimeout(() => {
+        char.attackCooldown = false;
+    }, 1000); 
 }
 
 // BAKGRUND
@@ -147,6 +236,7 @@ function drawBackground() {
     }
 }
 
+// Ritar spelaren
 function drawPlayer(char) {
     ctx.save();
     
@@ -170,8 +260,8 @@ function drawPlayer(char) {
         ctx.drawImage(
             char.currentSprite,
             char.frameIndex * spriteWidth, 0,
-            spriteWidth, spriteHeight,
-            screenX, screenY, // Rita normalt
+            spriteWidth - 1, spriteHeight,
+            screenX, screenY,
             spriteWidth * scale, spriteHeight * scale
         );
     }
@@ -220,6 +310,10 @@ function draw(timestamp) {
         return;
     }
 
+    // Kolla om någon träffar någon
+    checkAttackHit(p1, p2); // Kolla om P1 slår P2
+    checkAttackHit(p2, p1); // Kolla om P2 slår P1
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Uppdaterar fysik för båda
@@ -228,8 +322,8 @@ function draw(timestamp) {
 
     // Kamera
     const centerX = (p1.playerX + p2.playerX) / 2;
-    const targetCameraX = (centerX + (spriteWidth * scale) / 2) - (canvas.width / 2);
-    cameraX += (targetCameraX - cameraX) * 0.08;
+    const bikerCameraX = (centerX + (spriteWidth * scale) / 2) - (canvas.width / 2);
+    cameraX += (bikerCameraX - cameraX) * 0.08;
 
     // Uppdaterar animationer & UI
     updateAnimation(p1);
@@ -241,15 +335,36 @@ function draw(timestamp) {
     drawPlayer(p1);
     drawPlayer(p2);
 
-    // Hantera animation (15 FPS)
+    // Hantera animation (15 FPS) inuti draw-loop
     if (timestamp - lastTimestamp > (1000 / 15)) {
+        
         // P1
-        p1.frameIndex = (p1.frameIndex + 1) % p1.totalFrames;
-        if (p1.isAttacking && p1.frameIndex >= p1.totalFrames - 1) p1.isAttacking = false;
+        if (p1.isDead) {
+            if (p1.frameIndex < p1.totalFrames - 1) p1.frameIndex++;
+            else gameOver();
+        } else {
+            p1.frameIndex = (p1.frameIndex + 1) % p1.totalFrames;
+            
+            // Om attack är över, återställer träff-spärren
+            if (p1.isAttacking && p1.frameIndex >= p1.totalFrames - 1) {
+                p1.isAttacking = false;
+                p1.hasHitThisAttack = false;
+            }
+        }
 
         // P2
-        p2.frameIndex = (p2.frameIndex + 1) % p2.totalFrames;
-        if (p2.isAttacking && p2.frameIndex >= p2.totalFrames - 1) p2.isAttacking = false;
+        if (p2.isDead) {
+            if (p2.frameIndex < p2.totalFrames - 1) p2.frameIndex++;
+            else gameOver();
+        } else {
+            p2.frameIndex = (p2.frameIndex + 1) % p2.totalFrames;
+            
+            // Om attack är över, återställer träff-spärren
+            if (p2.isAttacking && p2.frameIndex >= p2.totalFrames - 1) {
+                p2.isAttacking = false;
+                p2.hasHitThisAttack = false;
+            }
+        }
 
         lastTimestamp = timestamp;
     }
@@ -264,17 +379,15 @@ window.addEventListener("keydown", (e) => {
     if (e.code === "KeyW" && p1.jumpCount < maxJumps) { p1.velocityY = -12; p1.jumpCount++; if (p1.jumpCount > 1) {doublejumpSound.cloneNode().play()} else {jumpSound.cloneNode().play()};}
     if (e.code === "KeyA") keys.a = true;
     if (e.code === "KeyD") keys.d = true;
-    if (e.code === "KeyF" && !p1.isAttacking) { p1.isAttacking = true; punchSound.cloneNode().play(); }
-    if (e.code === "KeyH") {takeDamage(p1, 10)};
+    if (e.code === "KeyF" && !p1.isAttacking) {performAttack(p1, punchSound);}
 
     // P2
     if (e.code === "ArrowUp" && p2.jumpCount < maxJumps) { p2.velocityY = -12; p2.jumpCount++; if (p2.jumpCount > 1) {doublejumpSound.cloneNode().play()} else {jumpSound.cloneNode().play()};}
     if (e.code === "ArrowLeft") keys.left = true;
     if (e.code === "ArrowRight") keys.right = true;
-    if (e.code === "Slash" && !p2.isAttacking) { p2.isAttacking = true; laserSound.cloneNode().play(); }
-    if (e.code === "KeyJ") {takeDamage(p2, 10)};
+    if (e.code === "Slash" && !p2.isAttacking) {performAttack(p2, laserSound);}
 
-    if (e.code === "Escape") {
+    if (e.code === "Escape" && !gameover) {
         gamePaused = !gamePaused;
         menuPanel.classList.toggle("active", gamePaused);
     }
